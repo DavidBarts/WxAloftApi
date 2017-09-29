@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="WxAloftApi" default="help" basedir=".">
+  <!-- import all environment variables as env.* -->
+  <property environment="env"/>
+
+  <!-- ensure required environment variables are set -->
+  <macrodef name="env-require">
+    <attribute name="name"/>
+    <sequential>
+      <fail message="Environment variable @{name} not set!">
+        <condition>
+          <not><isset property="env.@{name}"/></not>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+  <env-require name="JRE_HOME"/>
+  <env-require name="CATALINA_HOME"/>
+
+  <!-- Define the properties used by the build -->
+  <property name="app.name"      value="${ant.project.name}"/>
+  <property name="work.home"     value="${basedir}/work"/>
+  <property name="lib.home"      value="${basedir}/lib"/>
+  <property name="src.home"      value="${basedir}/src"/>
+  <property name="web.home"      value="${basedir}/web"/>
+  <property name="dist.home"     value="${basedir}/dist"/>
+
+  <!-- help message -->
+  <target name="help">
+    <echo>You can use the following targets:</echo>
+    <echo> </echo>
+    <echo>  help    : (default) Prints this message </echo>
+    <echo>  all     : Cleans, compiles, and stages application</echo>
+    <echo>  clean   : Deletes work directories</echo>
+    <echo>  compile : Compiles servlets into class files</echo>
+    <echo>  dist    : Get things staged for installation</echo>
+    <echo>  install : Install previously-staged webapp</echo>
+    <echo> </echo>
+    <echo>For example, to clean, compile, and package all at once, run:</echo>
+    <echo>prompt> ant all </echo>
+  </target>
+
+  <!-- Define the CLASSPATH -->
+  <target name="classpath">
+    <path id="compile.classpath">
+      <fileset dir="${env.JRE_HOME}/lib">
+        <include name="tools.jar"/>
+      </fileset>
+      <fileset dir="${env.CATALINA_HOME}/bin">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${env.CATALINA_HOME}/lib">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset dir="${lib.home}">
+        <include name="*.jar"/>
+      </fileset>
+      <pathelement location="${src.home}"/>
+    </path>
+  </target>
+
+  <!-- do everything but install -->
+  <target name="all" depends="clean,compile,dist"
+          description="Clean work dirs, compile, then install."/>
+
+  <!-- clean old cruft out of our way -->
+  <target name="clean"
+          description="Delete old work and dist directories">
+    <delete dir="${work.home}"/>
+    <delete dir="${dist.home}"/>
+  </target>
+
+  <!-- make new dist and work trees -->
+  <target name="prepare" depends="clean"
+          description="Create working dirs and copy static files to work dir">
+    <mkdir dir="${dist.home}/WEB-INF/classes"/>
+    <mkdir dir="${dist.home}/WEB-INF/lib"/>
+    <mkdir dir="${work.home}/WEB-INF/classes"/>
+    <copy todir="${work.home}">
+      <fileset dir="${web.home}"/>
+    </copy>
+  </target>
+  
+  <!-- put a jspc task here? note that Tomcat auto-compiles *.jsp anyhow -->
+
+  <!-- compile *.java to *.class -->
+  <target name="compile" depends="prepare,classpath"
+          description="Compile Java sources to ${work.home}/WEB-INF/classes">
+    <javac srcdir="${src.home}" destdir="${work.home}/WEB-INF/classes"
+           includeAntRuntime="false">
+      <classpath refid="compile.classpath"/>
+    </javac>
+  </target>
+
+  <!-- stage a webapp for installing -->
+  <target name="dist" depends="compile"
+          description="Make the dist tree for the install target">
+    <copy todir="${dist.home}" preservelastmodified="true">
+      <fileset dir="${work.home}"/>
+    </copy>
+    <copy todir="${dist.home}/WEB-INF/lib" preservelastmodified="true">
+      <fileset dir="${lib.home}">
+        <include name="*.jar"/>
+      </fileset>
+    </copy>
+    <copy file="${basedir}/web.xml" todir="dist/WEB-INF"
+          preservelastmodified="true"/>
+  </target>
+
+  <!-- install previously-staged webapp -->
+  <target name="install" description="Install the webapp">
+    <copy todir="${env.CATALINA_HOME}/webapps/${app.name}"
+          preservelastmodified="true">
+      <fileset dir="${dist.name}"/>
+    </copy>
+  </target>
+
+</project>
