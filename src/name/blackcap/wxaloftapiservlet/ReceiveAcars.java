@@ -10,13 +10,13 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Responsible for receiving demodulated ACARS packets from remote receivers.
- * 
+ *
  * @author David Barts <n5jrn@me.com>
  */
 public class ReceiveAcars extends HttpServlet {
     private static final long serialVersionUID = -8389925342660744959L;
     Charset UTF8 = Charset.forName("UTF-8");
-    
+
     /**
      * Process a POST request by receiving ACARS data.
      * @param req     HttpServletRequest
@@ -29,7 +29,7 @@ public class ReceiveAcars extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Unsupported media type");
             return;
         }
-        
+
         // Read the request body.
         JsonStructure js = null;
         try (JsonReader reader = Json.createReader(req.getReader())) {
@@ -41,13 +41,13 @@ public class ReceiveAcars extends HttpServlet {
                 return;
             }
         }
-        
+
         // We must get a JsonObject
         if (!(js instanceof JsonObject)) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (expecting JSON object)");
             return;
         }
-        
+
         // Obtain fields, taking offense if any are missing
         JsonObject obj = (JsonObject) js;
         String auth = obj.getString("auth");
@@ -70,11 +70,11 @@ public class ReceiveAcars extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing message)");
             return;
         }
-        
+
         // The authenticator will be validated here. On failure, return a 403
         // (Forbidden) error. 401 (Unauthorized) is intended for use with an
         // HTTP-based authentication method we don't use, so is not correct.
-        
+
         // For now, we just log what we got.
         String nl = System.lineSeparator();
         StringBuilder sb = new StringBuilder();
@@ -88,11 +88,11 @@ public class ReceiveAcars extends HttpServlet {
         if (!message.endsWith("\n"))
             sb.append(nl);
         getServletContext().log(sb.toString());
-        
+
         // AMF...
         sendSuccess(resp, HttpServletResponse.SC_OK);
     }
-    
+
     private void sendSuccess(HttpServletResponse resp, int status) throws IOException {
         resp.setStatus(status);
         try (PrintWriter out = resp.getWriter()) {
@@ -102,11 +102,11 @@ public class ReceiveAcars extends HttpServlet {
             out.println("</html>");
         }
     }
-    
+
     /**
      * Override service so we always respond in UTF-8.
      * @param req     HttpServletRequest
-     * @param resp   HttpServletResponse
+     * @param resp    HttpServletResponse
      */
     protected void service(HttpServletRequest req, HttpServletResponse resp)
      throws ServletException, IOException {

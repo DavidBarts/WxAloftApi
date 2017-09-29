@@ -76,11 +76,11 @@
     <mkdir dir="${dist.home}/WEB-INF/classes"/>
     <mkdir dir="${dist.home}/WEB-INF/lib"/>
     <mkdir dir="${work.home}/WEB-INF/classes"/>
-    <copy todir="${work.home}">
+    <copy todir="${work.home}" preservelastmodified="true">
       <fileset dir="${web.home}"/>
     </copy>
   </target>
-  
+
   <!-- put a jspc task here? note that Tomcat auto-compiles *.jsp anyhow -->
 
   <!-- compile *.java to *.class -->
@@ -111,7 +111,7 @@
   <target name="install" description="Install the webapp">
     <copy todir="${env.CATALINA_HOME}/webapps/${app.name}"
           preservelastmodified="true">
-      <fileset dir="${dist.name}"/>
+      <fileset dir="${dist.home}"/>
     </copy>
   </target>
 
