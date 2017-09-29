@@ -23,13 +23,6 @@ public class ReceiveAcars extends HttpServlet {
      * @param resp    HttpServletResponse
      */
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Take offense at unsupported content types.
-        String cType = req.getContentType();
-        if (cType == null || !cType.equals("application/json")) {
-            resp.sendError(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE, "Unsupported media type");
-            return;
-        }
-
         // Read the request body.
         JsonStructure js = null;
         try (JsonReader reader = Json.createReader(req.getReader())) {
@@ -78,6 +71,8 @@ public class ReceiveAcars extends HttpServlet {
         // For now, we just log what we got.
         String nl = System.lineSeparator();
         StringBuilder sb = new StringBuilder();
+        sb.append("Message follows...");
+        sb.append(nl);
         sb.append("Time: ");
         sb.append(time);
         sb.append(nl);
