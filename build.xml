@@ -84,7 +84,7 @@
   <!-- put a jspc task here? note that Tomcat auto-compiles *.jsp anyhow -->
 
   <!-- compile *.java to *.class -->
-  <target name="compile" depends="prepare,classpath"
+  <target name="compile" depends="prepare,classpath" debug="true"
           description="Compile Java sources to ${work.home}/WEB-INF/classes">
     <javac srcdir="${src.home}" destdir="${work.home}/WEB-INF/classes"
            includeAntRuntime="false">
@@ -103,7 +103,13 @@
         <include name="*.jar"/>
       </fileset>
     </copy>
-    <copy file="${basedir}/web.xml" todir="dist/WEB-INF"
+    <copy todir="${dist.home}/WEB-INF" preservelastmodified="true">
+      <fileset dir="${basedir}">
+        <include name="context.xml"/>
+        <include name="web.xml"/>
+      </fileset>
+    </copy>
+    <copy file="${basedir}/logging.properties" todir="${dist.home}/WEB-INF/classes"
           preservelastmodified="true"/>
   </target>
 

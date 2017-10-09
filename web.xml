@@ -22,14 +22,12 @@
 
 <web-app>
 
-
     <!-- General description of your web application -->
 
     <display-name>Weather Aloft API</display-name>
     <description>
       This is the API for the Weather Aloft project.
     </description>
-
 
     <!-- Context initialization parameters that define shared
          String constants used within your application, which
@@ -57,6 +55,12 @@
       </description>
     </context-param>
 
+    <resource-ref>
+      <description>Database Connection</description>
+      <res-ref-name>jdbc/WxDB</res-ref-name>
+      <res-type>javax.sql.DataSource</res-type>
+      <res-auth>Container</res-auth>
+    </resource-ref>
 
     <!-- Servlet definitions for the servlets that make up
          your web application, including initialization
@@ -93,7 +97,6 @@
       <load-on-startup>1</load-on-startup>
     </servlet>
 
-
     <!-- Define mappings that are used by the servlet container to
          translate a particular request URI (context-relative) to a
          particular servlet.  The examples below correspond to the
@@ -117,7 +120,6 @@
       <url-pattern>/ReceiveAcars</url-pattern>
     </servlet-mapping>
 
-
     <!-- Define the default session timeout for your application,
          in minutes.  From a servlet or JSP page, you can modify
          the timeout for a particular session dynamically by using
@@ -126,6 +128,5 @@
     <session-config>
       <session-timeout>30</session-timeout>    <!-- 30 minutes -->
     </session-config>
-
 
 </web-app>
