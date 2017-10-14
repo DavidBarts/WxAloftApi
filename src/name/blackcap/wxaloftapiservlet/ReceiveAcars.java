@@ -329,8 +329,8 @@ public class ReceiveAcars extends HttpServlet {
 
         // Add observations to the database
         try (
-            PreparedStatement stmt = conn.prepareStatement("insert into observations (received, observed, frequency, client_id, altitude, wind_speed, wind_dir, temperature, source, latitude, longitude) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            PreparedStatement stmt2 = conn.prepareStatement("insert into obs_area (observation_id, area_id) values (select area_id from areas where kilometers(areas.latitude, areas.longitude, ?, ?) <= ?), (?))")
+            PreparedStatement stmt = conn.prepareStatement("insert into observations (received, observed, frequency, client_id, altitude, wind_speed, wind_dir, temperature, source, latitude, longitude) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement stmt2 = conn.prepareStatement("insert into obs_area (observation_id, area_id) select ? as oid, id from areas where kilometers(areas.latitude, areas.longitude, ?, ?) <= ?")
         ) {
             long id = -1;
             for (AcarsObservation obs : observations) {
@@ -347,7 +347,7 @@ public class ReceiveAcars extends HttpServlet {
                     setObject(stmt, 6, obs.getWindSpeed(), Types.SMALLINT);
                     setObject(stmt, 7, obs.getWindDirection(), Types.SMALLINT);
                     setObject(stmt, 8, obs.getTemperature(), Types.FLOAT);
-                    stmt.setString(9, msg.getFlightId());
+                    stmt.setString(9, msg.getRegistration());
                     stmt.setDouble(10, obs.getLatitude());
                     stmt.setDouble(11, obs.getLongitude());
                     stmt.executeUpdate();
@@ -365,10 +365,10 @@ public class ReceiveAcars extends HttpServlet {
                     continue;
                 }
                 try {
-                    stmt2.setDouble(1, obs.getLatitude());
+                    stmt2.setLong(1, id);
                     stmt2.setDouble(2, obs.getLatitude());
-                    stmt2.setDouble(3, RADIUS);
-                    stmt2.setLong(4, id);
+                    stmt2.setDouble(3, obs.getLongitude());
+                    stmt2.setDouble(4, RADIUS);
                     stmt2.executeUpdate();
                 } catch (SQLWarning w) {
                     logger.log(Level.WARNING, "Warning inserting obs_area", w);
