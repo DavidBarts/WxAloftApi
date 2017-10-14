@@ -73,6 +73,7 @@
   <!-- make new dist and work trees -->
   <target name="prepare" depends="clean"
           description="Create working dirs and copy static files to work dir">
+    <mkdir dir="${dist.home}/META-INF"/>
     <mkdir dir="${dist.home}/WEB-INF/classes"/>
     <mkdir dir="${dist.home}/WEB-INF/lib"/>
     <mkdir dir="${work.home}/WEB-INF/classes"/>
@@ -84,10 +85,10 @@
   <!-- put a jspc task here? note that Tomcat auto-compiles *.jsp anyhow -->
 
   <!-- compile *.java to *.class -->
-  <target name="compile" depends="prepare,classpath" debug="true"
+  <target name="compile" depends="prepare,classpath"
           description="Compile Java sources to ${work.home}/WEB-INF/classes">
     <javac srcdir="${src.home}" destdir="${work.home}/WEB-INF/classes"
-           includeAntRuntime="false">
+           includeAntRuntime="false" debug="true">
       <classpath refid="compile.classpath"/>
     </javac>
   </target>
@@ -103,12 +104,10 @@
         <include name="*.jar"/>
       </fileset>
     </copy>
-    <copy todir="${dist.home}/WEB-INF" preservelastmodified="true">
-      <fileset dir="${basedir}">
-        <include name="context.xml"/>
-        <include name="web.xml"/>
-      </fileset>
-    </copy>
+    <copy file="${basedir}/web.xml" todir="${dist.home}/WEB-INF"
+          preservelastmodified="true"/>
+    <copy file="${basedir}/context.xml" todir="${dist.home}/META-INF"
+          preservelastmodified="true"/>
     <copy file="${basedir}/logging.properties" todir="${dist.home}/WEB-INF/classes"
           preservelastmodified="true"/>
   </target>

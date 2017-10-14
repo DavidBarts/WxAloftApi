@@ -4,14 +4,20 @@ import java.io.*;
 import java.sql.*;
 import java.nio.charset.Charset;
 import java.text.ParseException;
-import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.Formatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.TimeZone;
 import javax.json.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
 
 import name.blackcap.acarsutils.wxdecoder.WxDecoder;
 import name.blackcap.acarsutils.AcarsMessage;
@@ -80,22 +86,22 @@ public class ReceiveAcars extends HttpServlet {
         JsonNumber channel = null;
         String message = null;
         try {
-            String auth = obj.getString("auth");
+            auth = obj.getString("auth");
             if (auth == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing auth)");
                 return;
             }
-            String time = obj.getString("time");
+            time = obj.getString("time");
             if (time == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing time)");
                 return;
             }
-            JsonNumber channel = obj.getJsonNumber("channel");
+            channel = obj.getJsonNumber("channel");
             if (channel == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing channel)");
                 return;
             }
-            String message = obj.getString("message");
+            message = obj.getString("message");
             if (message == null) {
                 resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing message)");
                 return;
@@ -110,13 +116,15 @@ public class ReceiveAcars extends HttpServlet {
         AcarsMessage parsed = new AcarsMessage(message);
         if (!parsed.parse()) {
             logger.log(Level.SEVERE, "Unable to parse ACARS message " + see(message));
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unparseable ACARS message)");
             return;
         }
-        Date date = null;
+        java.util.Date date = null;
         try {
             date = JSON_TIME.parse(time);
         } catch (ParseException e) {
             logger.log(Level.SEVERE, "Unable to parse time " + see(time), e);
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unparseable time)");
             return;
         }
 
@@ -127,7 +135,7 @@ public class ReceiveAcars extends HttpServlet {
 
             // Authenticate
             String cName = null;
-            int cId = -1
+            int cId = -1;
             boolean logAll = false;
             boolean recordWx = false;
             try (PreparedStatement stmt = conn.prepareStatement("select id, name, log_all, record_wx from clients where auth = ?")) {
@@ -135,46 +143,60 @@ public class ReceiveAcars extends HttpServlet {
                 ResultSet rs = stmt.executeQuery();
                 if (rs.next()) {
                     cId = rs.getInt(1);
-                    name = rs.getString(2);
+                    cName = rs.getString(2);
                     logAll = rs.getBoolean(3);
                     recordWx = rs.getBoolean(4);
                 } else {
                     logger.log(Level.WARNING, "Unknown authenticator " + see(auth));
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden (unknown authenticator)");
                     return;
                 }
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, "Error authenticating " + see(auth), e);
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to authenticate)");
+                return;
             }
 
             // Map channel number to frequency, if needed
             int ichannel = channel.intValue();
             double frequency = 0.0;
             if (ichannel < MIN_FREQUENCY) {
-                try (PreparedStatement stmt = conn.PrepareStatement("select frequency from frequencies where client_id = ? and channel = ?")) {
+                try (PreparedStatement stmt = conn.prepareStatement("select frequency from frequencies where client_id = ? and channel = ?")) {
                     stmt.setInt(1, cId);
                     stmt.setInt(2, ichannel);
                     ResultSet rs = stmt.executeQuery();
                     if (rs.next()) {
                         frequency = rs.getDouble(1);
                     } else {
-                        logger.log(Level.WARNING, String.format("No frequency for channel %d client %d (%s)", ichannel, cId, name));
+                        logger.log(Level.WARNING, String.format("No frequency for channel %d client %d (%s)", ichannel, cId, cName));
+                        resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unknown channel)");
                         return;
                     }
+                } catch (SQLException e) {
+                    logger.log(Level.SEVERE, String.format("Error getting frequency for channel %d client %d (%s)", ichannel, cId, cName), e);
+                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to get frequency)");
+                    return;
                 }
             } else {
-                frequency = ch.doubleValue();
+                frequency = channel.doubleValue();
             }
 
             // Do actions
             if (logAll)
-                logMessage(conn, parsed, name, frequency, date);
+                logMessage(conn, parsed, cName, frequency, date);
             if (recordWx)
-                recordMessage(conn, parsed, name, frequency, date, cId);
+                recordMessage(conn, parsed, cName, frequency, date, cId);
+        } catch (NamingException|SQLException e) {
+            logger.log(Level.SEVERE, "Unable to obtain database connection", e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to obtain DB connection)");
+            return;
         }
 
         // AMF...
         sendSuccess(resp, HttpServletResponse.SC_OK);
     }
 
-    private void logMessage(Connection conn, AcarsMessage msg, String name, double freq, Date ti) {
+    private void logMessage(Connection conn, AcarsMessage msg, String name, double freq, java.util.Date ti) {
         CaretNotator cn = new CaretNotator();
         cn.appendRaw("Received by ");
         cn.appendRaw(name);
@@ -189,7 +211,7 @@ public class ReceiveAcars extends HttpServlet {
             cn.appendRaw("Aircraft registration: ");
             cn.append(msg.getRegistration());
             cn.appendRaw(" Flight ID: ");
-            seeMsgIdFlt(cn, demodMessage.getFlightId());
+            seeMsgIdFlt(cn, msg.getFlightId());
             cn.appendNewline();
         }
 
@@ -205,20 +227,20 @@ public class ReceiveAcars extends HttpServlet {
         cn.appendNewline();
 
         cn.appendRaw("Block ID: ");
-        cn.append(demodMessage.getBlockId());
+        cn.append(msg.getBlockId());
         cn.appendRaw(" Acknowledge: ");
-        cn.append(demodMessage.getAcknowledge());
+        cn.append(msg.getAcknowledge());
         cn.appendNewline();
 
         cn.appendRaw("Message ID: ");
-        seeMsgIdFlt(cn, demodMessage.getMessageId());
+        seeMsgIdFlt(cn, msg.getMessageId());
         cn.appendNewline();
 
         if (msg.getSource() != null) {
             cn.appendRaw("Message source: ");
-            cn.append(demodMessage.getSource());
+            cn.append(msg.getSource());
             cn.appendRaw(" (");
-            cn.appendRaw(demodMessage.getSourceExplanation());
+            cn.appendRaw(msg.getSourceExplanation());
             cn.appendRaw(")");
             cn.appendNewline();
         }
@@ -226,7 +248,7 @@ public class ReceiveAcars extends HttpServlet {
         /* the message body */
         cn.appendRaw("Message:");
         cn.appendNewline();
-        cn.appendMultiline(demodMessage.getMessage());
+        cn.appendMultiline(msg.getMessage());
 
         /* log it */
         logger.log(Level.INFO, cn.toString());
@@ -263,12 +285,12 @@ public class ReceiveAcars extends HttpServlet {
             default:
                 if (ch < 32 || ch > 126) {
                     fmt.format("\\u%04x", ch);
-                    fmt.flush();
                 } else
                     ret.append(ch);
                 break;
             }
         }
+        fmt.flush();
         ret.append('\"');
         return ret.toString();
     }
@@ -282,7 +304,7 @@ public class ReceiveAcars extends HttpServlet {
             cn.append(v);
     }
 
-    private void recordMessage(Connection conn, AcarsMessage msg, String name, double freq, Date ti, int cl) {
+    private void recordMessage(Connection conn, AcarsMessage msg, String name, double freq, java.util.Date ti, int cl) {
         // Get flight ID, ignore message if it doesn't have one
         String flightId = msg.getFlightId();
         if (flightId == null)
@@ -307,18 +329,18 @@ public class ReceiveAcars extends HttpServlet {
 
         // Add observations to the database
         try (
-            PreparedStatement stmt = conn.prepareStatement("insert into observations (received, observed, frequency, client_id, altitude, wind_speed, wind_dir, temperature, source, latitude, longitude) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-            PreparedStatement stmt2 = conn.prepareStatement("insert into obs_area (observation_id, area_id) values (select area_id from areas where kilometers(areas.latitude, areas.longitude, ?, ?) <= ?), (?))");
+            PreparedStatement stmt = conn.prepareStatement("insert into observations (received, observed, frequency, client_id, altitude, wind_speed, wind_dir, temperature, source, latitude, longitude) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement stmt2 = conn.prepareStatement("insert into obs_area (observation_id, area_id) values (select area_id from areas where kilometers(areas.latitude, areas.longitude, ?, ?) <= ?), (?))")
         ) {
             long id = -1;
             for (AcarsObservation obs : observations) {
                 // Observations must contain full spacetime coordinates to be
                 // meaningful; ignore all others.
-                if (obs.getTime() == null || obs.getAltitude() == null || obs.getLatitude() == null || obs.getLongitude() == null)
+                if (obs.getObserved() == null || obs.getAltitude() == null || obs.getLatitude() == null || obs.getLongitude() == null)
                     continue;
                 try {
-                    stmt.setTimestamp(1, new Timestamp(ti));
-                    stmt.setTimestamp(2, new Timestamp(obs.getTime()));
+                    stmt.setTimestamp(1, new Timestamp(ti.getTime()));
+                    stmt.setTimestamp(2, new Timestamp(obs.getObserved().getTime()));
                     stmt.setDouble(3, freq);
                     stmt.setInt(4, cl);
                     stmt.setInt(5, obs.getAltitude());
@@ -333,7 +355,7 @@ public class ReceiveAcars extends HttpServlet {
                     if (rs.next())
                         id = rs.getLong(1);
                     else {
-                        Logger.log(Level.SEVERE, "Error obtaining observation ID", e);
+                        logger.log(Level.SEVERE, "Error obtaining observation ID");
                         continue;
                     }
                 } catch (SQLWarning w) {
@@ -354,19 +376,21 @@ public class ReceiveAcars extends HttpServlet {
                     logger.log(Level.SEVERE, "Unable to insert obs_area", e);
                 }
             }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Unable to prepare statements", e);
         }
     }
 
     // Set a field in a prepared statement, not being braindamaged if the
     // passed object is null.
-    private void setObject(PreparedStatement stmt, int ndx, Object obj, int type)  throws SQLExceltion {
+    private void setObject(PreparedStatement stmt, int ndx, Object obj, int type)  throws SQLException {
         if (obj == null)
             stmt.setNull(ndx, type);
         else
             stmt.setObject(ndx, obj, JDBCType.valueOf(type));
     }
 
-    private Connection getConnection() {
+    private Connection getConnection() throws NamingException, SQLException {
         Context c = (Context) (new InitialContext()).lookup("java:comp/env");
         DataSource d = (DataSource) c.lookup("jdbc/WxDB");
         return d.getConnection();
