@@ -28,9 +28,9 @@
          -->
 
   <Resource name="jdbc/WxDB" auth="Container" type="javax.sql.DataSource"
-               defaultAutoCommit="true"
+               defaultAutoCommit="true" validationQuery="SELECT 1" minIdle="2"
                factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
-               maxActive="20" maxIdle="4" maxWait="10000"
+               maxActive="20" maxIdle="4" maxWait="10000" testOnBorrow="true"
                username="wxaloft" password="LoqS2tUC" driverClassName="com.mysql.jdbc.Driver"
                url="jdbc:mysql://localhost:3306/wx_aloft"/>
 

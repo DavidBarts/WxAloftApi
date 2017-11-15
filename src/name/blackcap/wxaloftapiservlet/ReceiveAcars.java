@@ -327,7 +327,7 @@ public class ReceiveAcars extends HttpServlet {
         if (observations == null)
             return;
 
-        // Add observations to the database
+        // Add observations to the database, silently ignoring duplicates.
         try (
             PreparedStatement stmt = conn.prepareStatement("insert into observations (received, observed, frequency, client_id, altitude, wind_speed, wind_dir, temperature, source, latitude, longitude) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
             PreparedStatement stmt2 = conn.prepareStatement("insert into obs_area (observation_id, area_id) select ? as oid, id from areas where kilometers(areas.latitude, areas.longitude, ?, ?) <= ?")
@@ -358,6 +358,14 @@ public class ReceiveAcars extends HttpServlet {
                         logger.log(Level.SEVERE, "Error obtaining observation ID");
                         continue;
                     }
+                } catch (com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException e) {
+                    // Ack. This is the only way to capture and ignore an
+                    // attempt to insert a duplicate record any where near
+                    // unambiguously. This exception is a direct class of
+                    // java.sql.SQLException! There apparently is no
+                    // java.sql.* exception class related to integrity
+                    // constraint violations. Sigh.
+                    continue;
                 } catch (SQLWarning w) {
                     logger.log(Level.WARNING, "Warning inserting observation", w);
                 } catch (SQLException e) {
