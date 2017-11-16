@@ -139,7 +139,7 @@ public class ReceiveAcars extends HttpServlet {
             boolean logAll = false;
             boolean recordWx = false;
             try (PreparedStatement stmt = conn.prepareStatement("select id, name, log_all, record_wx from clients where auth = ?")) {
-                stmt.setBytes(1, auth.getBytes(ASCII));
+                stmt.setBytes(1, AuthTool.hash(auth));
                 ResultSet rs = stmt.executeQuery();
                 if (rs.next()) {
                     cId = rs.getInt(1);
