@@ -138,6 +138,7 @@ public class AuthTool
             System.err.format("%s: unable to obtain database connection%n", MYNAME);
             System.exit(1);
         }
+        conn.setAutoCommit(true);
 
         /* obtain missing client info, die if client is not there */
         int locationId = -1;
