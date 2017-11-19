@@ -406,12 +406,12 @@ public class ReceiveAcars extends HttpServlet {
 
     private void sendSuccess(HttpServletResponse resp, int status) throws IOException {
         resp.setStatus(status);
-        try (PrintWriter out = resp.getWriter()) {
-            out.println("<html>");
-            out.println("  <head><title>Success</title></head>");
-            out.println("  <body><p>The operation completed successfully.</p></body>");
-            out.println("</html>");
-        }
+        PrintWriter out = resp.getWriter();
+        out.println("<html>");
+        out.println("  <head><title>Success</title></head>");
+        out.println("  <body><p>The operation completed successfully.</p></body>");
+        out.println("</html>");
+        out.flush();
     }
 
     /**
