@@ -53,7 +53,7 @@ public class ReceiveAcars extends HttpServlet {
     private static double RADIUS = 350.0;
 
     /* Logger we use. */
-    private Logger logger;
+    private static final Logger LOGGER = Logger.getLogger(ReceiveAcars.class.getCanonicalName());
 
     /**
      * Process a POST request by receiving ACARS data.
@@ -107,7 +107,7 @@ public class ReceiveAcars extends HttpServlet {
                 return;
             }
         } catch (NullPointerException|ClassCastException e) {
-            logger.log(Level.WARNING, "Missing or invalid item", e);
+            LOGGER.log(Level.WARNING, "Missing or invalid item", e);
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (missing or invalid item)");
             return;
         }
@@ -115,7 +115,7 @@ public class ReceiveAcars extends HttpServlet {
         // Parse the ACARS message and date/time field
         AcarsMessage parsed = new AcarsMessage(message);
         if (!parsed.parse()) {
-            logger.log(Level.SEVERE, "Unable to parse ACARS message " + see(message));
+            LOGGER.log(Level.SEVERE, "Unable to parse ACARS message " + see(message));
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unparseable ACARS message)");
             return;
         }
@@ -123,7 +123,7 @@ public class ReceiveAcars extends HttpServlet {
         try {
             date = JSON_TIME.parse(time);
         } catch (ParseException e) {
-            logger.log(Level.SEVERE, "Unable to parse time " + see(time), e);
+            LOGGER.log(Level.SEVERE, "Unable to parse time " + see(time), e);
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unparseable time)");
             return;
         }
@@ -147,12 +147,12 @@ public class ReceiveAcars extends HttpServlet {
                     logAll = rs.getBoolean(3);
                     recordWx = rs.getBoolean(4);
                 } else {
-                    logger.log(Level.WARNING, "Unknown authenticator " + see(auth));
+                    LOGGER.log(Level.WARNING, "Unknown authenticator " + see(auth));
                     resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden (unknown authenticator)");
                     return;
                 }
             } catch (SQLException e) {
-                logger.log(Level.SEVERE, "Error authenticating " + see(auth), e);
+                LOGGER.log(Level.SEVERE, "Error authenticating " + see(auth), e);
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to authenticate)");
                 return;
             }
@@ -168,12 +168,12 @@ public class ReceiveAcars extends HttpServlet {
                     if (rs.next()) {
                         frequency = rs.getDouble(1);
                     } else {
-                        logger.log(Level.WARNING, String.format("No frequency for channel %d client %d (%s)", ichannel, cId, cName));
+                        LOGGER.log(Level.WARNING, String.format("No frequency for channel %d client %d (%s)", ichannel, cId, cName));
                         resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Bad request (unknown channel)");
                         return;
                     }
                 } catch (SQLException e) {
-                    logger.log(Level.SEVERE, String.format("Error getting frequency for channel %d client %d (%s)", ichannel, cId, cName), e);
+                    LOGGER.log(Level.SEVERE, String.format("Error getting frequency for channel %d client %d (%s)", ichannel, cId, cName), e);
                     resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to get frequency)");
                     return;
                 }
@@ -187,7 +187,7 @@ public class ReceiveAcars extends HttpServlet {
             if (recordWx)
                 recordMessage(conn, parsed, cName, frequency, date, cId);
         } catch (NamingException|SQLException e) {
-            logger.log(Level.SEVERE, "Unable to obtain database connection", e);
+            LOGGER.log(Level.SEVERE, "Unable to obtain database connection", e);
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unable to obtain DB connection)");
             return;
         }
@@ -251,7 +251,7 @@ public class ReceiveAcars extends HttpServlet {
         cn.appendMultiline(msg.getMessage());
 
         /* log it */
-        logger.log(Level.INFO, cn.toString());
+        LOGGER.log(Level.INFO, cn.toString());
     }
 
     private String see(String s) {
@@ -355,7 +355,7 @@ public class ReceiveAcars extends HttpServlet {
                     if (rs.next())
                         id = rs.getLong(1);
                     else {
-                        logger.log(Level.SEVERE, "Error obtaining observation ID");
+                        LOGGER.log(Level.SEVERE, "Error obtaining observation ID");
                         continue;
                     }
                 } catch (com.mysql.jdbc.exceptions.jdbc4.MySQLIntegrityConstraintViolationException e) {
@@ -367,9 +367,9 @@ public class ReceiveAcars extends HttpServlet {
                     // constraint violations. Sigh.
                     continue;
                 } catch (SQLWarning w) {
-                    logger.log(Level.WARNING, "Warning inserting observation", w);
+                    LOGGER.log(Level.WARNING, "Warning inserting observation", w);
                 } catch (SQLException e) {
-                    logger.log(Level.SEVERE, "Unable to insert observation", e);
+                    LOGGER.log(Level.SEVERE, "Unable to insert observation", e);
                     continue;
                 }
                 try {
@@ -379,13 +379,13 @@ public class ReceiveAcars extends HttpServlet {
                     stmt2.setDouble(4, RADIUS);
                     stmt2.executeUpdate();
                 } catch (SQLWarning w) {
-                    logger.log(Level.WARNING, "Warning inserting obs_area", w);
+                    LOGGER.log(Level.WARNING, "Warning inserting obs_area", w);
                 } catch (SQLException e) {
-                    logger.log(Level.SEVERE, "Unable to insert obs_area", e);
+                    LOGGER.log(Level.SEVERE, "Unable to insert obs_area", e);
                 }
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Unable to prepare statements", e);
+            LOGGER.log(Level.SEVERE, "Unable to prepare statements", e);
         }
     }
 
@@ -424,11 +424,4 @@ public class ReceiveAcars extends HttpServlet {
         resp.setContentType("text/html; charset=UTF-8");
         super.service(req, resp);
     }
-
-   /**
-    * We override init so that there's always a logger defined.
-    */
-   public void init() throws ServletException {
-       logger = Logger.getLogger(getClass().getCanonicalName());
-   }
 }

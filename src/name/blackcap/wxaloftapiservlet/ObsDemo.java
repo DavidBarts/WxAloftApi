@@ -1,6 +1,7 @@
 package name.blackcap.wxaloftapiservlet;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.logging.Level;
@@ -102,20 +103,30 @@ public class ObsDemo extends HttpServlet {
                 JsonObjectBuilder joBuilder = Json.createObjectBuilder();
                 for (String field : FIELDS) {
                     Object v = rs.getObject(field);
-                    if (v instanceof Float || v instanceof Double)
-                        joBuilder.add(field, (double) v);
-                    else if (v instanceof Short || v instanceof Integer)
-                        joBuilder.add(field, (int) v);
+                    if (v instanceof Double)
+                        joBuilder.add(field, (Double) v);
+                    else if (v instanceof Float)
+                        /* a hack to hide rounding errors */
+                        joBuilder.add(field, Double.parseDouble(v.toString()));
+                    else if (v instanceof BigDecimal)
+                        /* not currently used but here for futureproofing */
+                        joBuilder.add(field, (BigDecimal) v);
+                    else if (v instanceof Number)
+                        /* this works for all other number types returned by JDBC */
+                        joBuilder.add(field, ((Number) v).longValue());
                     else if (v instanceof Timestamp)
                         joBuilder.add(field, dFormat.format((Timestamp) v));
                     else if (v instanceof String)
                         joBuilder.add(field, (String) v);
+                    else if (v == null)
+                        joBuilder.addNull(field);
                     else {
                         LOGGER.log(Level.SEVERE, "Unexpected type in observations table");
                         resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Internal server error (unexpected type)");
                         return;
                     }
                 }
+                jaBuilder.add(joBuilder);
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Unable to get observations", e);

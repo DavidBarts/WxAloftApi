@@ -97,6 +97,16 @@
       <load-on-startup>1</load-on-startup>
     </servlet>
 
+    <servlet>
+      <servlet-name>ObsDemo</servlet-name>
+      <description>
+        A temporary demo servlet that returns Seattle-area observations over
+        the past 2 hours only.
+      </description>
+      <servlet-class>name.blackcap.wxaloftapiservlet.ObsDemo</servlet-class>
+      <load-on-startup>1</load-on-startup>
+    </servlet>
+
     <!-- Define mappings that are used by the servlet container to
          translate a particular request URI (context-relative) to a
          particular servlet.  The examples below correspond to the
@@ -118,6 +128,11 @@
     <servlet-mapping>
       <servlet-name>ReceiveAcars</servlet-name>
       <url-pattern>/ReceiveAcars</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+      <servlet-name>ObsDemo</servlet-name>
+      <url-pattern>/ObsDemo</url-pattern>
     </servlet-mapping>
 
     <!-- Define the default session timeout for your application,
