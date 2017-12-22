@@ -98,6 +98,16 @@
     </servlet>
 
     <servlet>
+      <servlet-name>ObsData</servlet-name>
+      <description>
+        Retrieve observations as JSON for the specified area for the specified
+        past time interval.
+      </description>
+      <servlet-class>name.blackcap.wxaloftapiservlet.ObsData</servlet-class>
+      <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet>
       <servlet-name>ObsDemo</servlet-name>
       <description>
         A temporary demo servlet that returns Seattle-area observations over
@@ -128,6 +138,11 @@
     <servlet-mapping>
       <servlet-name>ReceiveAcars</servlet-name>
       <url-pattern>/ReceiveAcars</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+      <servlet-name>ObsData</servlet-name>
+      <url-pattern>/ObsData</url-pattern>
     </servlet-mapping>
 
     <servlet-mapping>
