@@ -32,7 +32,7 @@ public class ObsData extends HttpServlet {
     static {
         UTC_TIME.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
-    private static final Logger LOGGER = Logger.getLogger(ObsDemo.class.getCanonicalName());
+    private static final Logger LOGGER = Logger.getLogger(ObsData.class.getCanonicalName());
 
     /* maybe put these in a common file? or do we want separate defaults? */
     private static final String DEFAULT_DURATION = "PT2H";
