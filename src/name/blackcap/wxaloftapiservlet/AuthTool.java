@@ -8,12 +8,6 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.*;
 import java.sql.*;
-import java.util.Properties;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.*;
-import org.xml.sax.SAXException;
 
 /**
  * @author me@blackcap.name
@@ -107,7 +101,7 @@ public class AuthTool
         }
 
         /* syntax error if no arguments beyond -c context */
-        if (args.length < client) {
+        if (args.length <= client) {
             noclient();
         }
 
@@ -133,7 +127,7 @@ public class AuthTool
         }
 
         /* open a database connection */
-        Connection conn = getConnection(context);
+        Connection conn = DBUtils.getConnection(context);
         if (conn == null) {
             System.err.format("%s: unable to obtain database connection%n", MYNAME);
             System.exit(1);
@@ -212,92 +206,6 @@ public class AuthTool
     {
         if (s != null)
             System.out.println(s);
-    }
-
-    private static Connection getConnection(String name) throws ParserConfigurationException, SQLException
-    {
-        /* parse document */
-        Node doc = null;
-        try {
-            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new File(name));
-        } catch (IOException|SAXException e) {
-            System.err.format("%s: %s%n", MYNAME, e.getMessage());
-            return null;
-        }
-
-        /* drop down to root node */
-        Node n = doc.getFirstChild();
-        while (n != null) {
-            System.out.format("Got a %s%n", n.getClass().getName());
-            if (nodeIs(n, "Context"))
-                break;
-            n = n.getNextSibling();
-        }
-        if (n == null) {
-            System.err.format("%s: no root Context node found!%n", MYNAME);
-            return null;
-        }
-        doc = n;
-
-        /* locate the first suitable Resource node */
-        NamedNodeMap attrs = null;
-        n = doc.getFirstChild();
-        while (n != null) {
-            if (nodeIs(n, "Resource")) {
-                attrs = n.getAttributes();
-                if ("javax.sql.DataSource".equals(getAttribute(attrs, "type")))
-                    break;
-            }
-            n = n.getNextSibling();
-        }
-        if (n == null) {
-            System.err.format("%s: no suitable Resource node found%s%n", MYNAME);
-            return null;
-        }
-
-        /* get data for connect string */
-        String url = getAttribute(attrs, "url");
-        if (url == null) {
-            System.err.format("%s: no database URL found%n", MYNAME);
-            return null;
-        }
-        String username = getAttribute(attrs, "username");
-        if (username == null) {
-            System.err.format("%s: no database username found%n", MYNAME);
-            return null;
-        }
-        String password = getAttribute(attrs, "password");
-        if (password == null) {
-            System.err.format("%s: no database password found%n", MYNAME);
-            return null;
-        }
-
-        /* return a connection */
-        Properties props = new Properties();
-        props.put("user", username);
-        props.put("password", password);
-        return DriverManager.getConnection(url, props);
-    }
-
-    private static boolean nodeIs(Node n, String s)
-    {
-        if (!(n instanceof Element))
-            return false;
-        String myName = ((Element) n).getTagName();
-        if (myName == null)
-            return false;
-        int colon = myName.lastIndexOf(':');
-        if (colon > -1)
-            myName = myName.substring(colon + 1);
-        return myName.equals(s);
-    }
-
-    private static String getAttribute(NamedNodeMap attrs, String name)
-    {
-        Attr raw = (Attr) attrs.getNamedItem(name);
-        if (raw == null)
-            return null;
-        return raw.getValue();
     }
 
     private static void noclient()
