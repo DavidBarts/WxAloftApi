@@ -1,11 +1,11 @@
-package name.blackcap.wxaloftapiservlet;
+package info.koosah.wxaloftapiservlet;
 
 import java.io.File;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 
 /**
- * @author me@blackcap.name
+ * @author n5jrn@me.com
  * @since 2017-11-16
  *
  * A command-line tool for purging old observations.

@@ -1,4 +1,4 @@
-package name.blackcap.wxaloftapiservlet;
+package info.koosah.wxaloftapiservlet;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,7 +10,7 @@ import java.security.*;
 import java.sql.*;
 
 /**
- * @author me@blackcap.name
+ * @author n5jrn@me.com
  * @since 2017-11-16
  *
  * Both a command-line tool for managing authenticators and a callable

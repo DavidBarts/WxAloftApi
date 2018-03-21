@@ -1,4 +1,4 @@
-package name.blackcap.wxaloftapiservlet;
+package info.koosah.wxaloftapiservlet;
 
 import java.io.*;
 import java.sql.*;
@@ -19,10 +19,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-import name.blackcap.acarsutils.wxdecoder.WxDecoder;
-import name.blackcap.acarsutils.AcarsMessage;
-import name.blackcap.acarsutils.AcarsObservation;
-import name.blackcap.acarsutils.CaretNotator;
+import info.koosah.acarsutils.wxdecoder.WxDecoder;
+import info.koosah.acarsutils.AcarsMessage;
+import info.koosah.acarsutils.AcarsObservation;
+import info.koosah.acarsutils.CaretNotator;
 
 
 /**

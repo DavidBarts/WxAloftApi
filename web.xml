@@ -93,7 +93,7 @@
         Receives ACARS messages that the receiving stations send us. The
         messages are sent as JSON in POST requests.
       </description>
-      <servlet-class>name.blackcap.wxaloftapiservlet.ReceiveAcars</servlet-class>
+      <servlet-class>info.koosah.wxaloftapiservlet.ReceiveAcars</servlet-class>
       <load-on-startup>1</load-on-startup>
     </servlet>
 
@@ -103,7 +103,7 @@
         Retrieve observations as JSON for the specified area for the specified
         past time interval.
       </description>
-      <servlet-class>name.blackcap.wxaloftapiservlet.ObsData</servlet-class>
+      <servlet-class>info.koosah.wxaloftapiservlet.ObsData</servlet-class>
       <load-on-startup>1</load-on-startup>
     </servlet>
 
@@ -113,7 +113,7 @@
         A temporary demo servlet that returns Seattle-area observations over
         the past 2 hours only.
       </description>
-      <servlet-class>name.blackcap.wxaloftapiservlet.ObsDemo</servlet-class>
+      <servlet-class>info.koosah.wxaloftapiservlet.ObsDemo</servlet-class>
       <load-on-startup>1</load-on-startup>
     </servlet>
 

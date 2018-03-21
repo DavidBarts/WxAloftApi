@@ -1,4 +1,4 @@
-package name.blackcap.wxaloftapiservlet;
+package info.koosah.wxaloftapiservlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 /**
- * @author me@blackcap.name
+ * @author n5jrn@me.com
  * @since 2017-12-14
  *
  * Miscellaneous database-related routines.

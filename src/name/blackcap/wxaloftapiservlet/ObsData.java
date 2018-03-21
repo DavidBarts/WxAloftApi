@@ -1,4 +1,4 @@
-package name.blackcap.wxaloftapiservlet;
+package info.koosah.wxaloftapiservlet;
 
 import java.io.*;
 import java.math.BigDecimal;
