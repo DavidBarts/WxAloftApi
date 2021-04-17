@@ -32,6 +32,6 @@
                factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
                maxActive="20" maxIdle="4" maxWait="10000" testOnBorrow="true"
                username="wxaloft" password="LoqS2tUC" driverClassName="com.mysql.jdbc.Driver"
-               url="jdbc:mysql://localhost:3306/wx_aloft&amp;useSSL=false"/>
+               url="jdbc:mysql://localhost:3306/wx_aloft?useSSL=false"/>
 
 </Context>
